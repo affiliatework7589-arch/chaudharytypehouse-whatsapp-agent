@@ -93,6 +93,7 @@ const rt = {
   lastQrIssuedAt: 0,
   lastQr: "",
   lastEventAt: 0,
+  lastAliveAt: 0,
   lastMessageAt: 0,
   lastError: "",
   reconnects: 0,
@@ -393,6 +394,7 @@ function wire(s, saveCreds) {
     if (connection === "connecting") LOG("conn", "connecting to WhatsApp Web ...");
     if (connection === "open") {
       rt.connected = true;
+      rt.lastAliveAt = Date.now();
       rt.lastError = "";
       LOG("conn", "OPEN - connected to WhatsApp (inbound-only mode active)");
     }
@@ -563,6 +565,7 @@ async function startSock(reason) {
     // self-consistent and future Baileys releases agree.
     if (state.creds.me && !state.creds.registered) {
       state.creds.registered = true;
+      rt.auth.registered = true;
       try {
         await saveCreds();
         LOG("auth", "creds.registered normalised false -> true (creds.me present)");
@@ -654,18 +657,29 @@ setInterval(() => {
     scheduleReconnect("watchdog", 2000);
     return;
   }
-  if (rt.lastEventAt && Date.now() - rt.lastEventAt > STALE_MS) {
-    LOG("watch", `no events for ${Math.round((Date.now() - rt.lastEventAt) / 1000)}s - forcing reconnect`);
+  // Liveness is proven by the 60s heartbeat (see below), not by message
+  // traffic, so a quiet chat never causes a needless reconnect.
+  if (rt.lastAliveAt && Date.now() - rt.lastAliveAt > STALE_MS) {
+    LOG("watch", `no successful heartbeat for ${Math.round((Date.now() - rt.lastAliveAt) / 1000)}s - forcing reconnect`);
     try { sock.end(new Error("stale connection")); } catch (_) {}
     scheduleReconnect("watchdog-stale", 2000);
   }
 }, HEARTBEAT_MS);
 
+// Heartbeat: proves the socket is alive even when no messages arrive.
 setInterval(() => {
   if (!sock || !rt.connected) return;
   try {
-    sock.sendPresenceUpdate("available").catch(() => {});
-  } catch (_) {}
+    sock.sendPresenceUpdate("available").then(() => {
+      rt.lastAliveAt = Date.now();
+    }).catch((e) => {
+      rt.lastAliveAt = 0;
+      FAIL("heartbeat", e);
+    });
+  } catch (e) {
+    rt.lastAliveAt = 0;
+    FAIL("heartbeat", e);
+  }
 }, 60000);
 
 process.on("uncaughtException", (e) => {
