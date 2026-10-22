@@ -51,6 +51,10 @@ const TYPING_MAX_MS = Number(process.env.TYPING_MAX_MS || 10000);
 const FALLBACK_WA_VERSION = [2, 3000, 1043857760]; // bundled with baileys 7.0.0-rc14
 const HEARTBEAT_MS = Number(process.env.HEARTBEAT_MS || 30000);
 const STALE_MS = Number(process.env.STALE_MS || 20 * 60 * 1000);
+// How far back an OFFLINE ("append") message may be and still be answered.
+// Guards against replying to ancient history-sync dumps while still covering
+// messages that arrived during a Render sleep (Render idles out after 15 min).
+const OFFLINE_REPLY_WINDOW_MIN = Number(process.env.OFFLINE_REPLY_WINDOW_MIN || 60);
 const LOG_LEVEL = process.env.LOG_LEVEL || "info";
 const ALLOW_GROUPS = process.env.WA_ALLOW_GROUPS === "1";
 const IGNORE_JIDS = (process.env.WA_IGNORE_JIDS || "status@broadcast")
@@ -339,6 +343,22 @@ async function handleMessage(s, jid, text, voice) {
  * ------------------------------------------------------------------ */
 let sock = null;
 let starting = false;
+let reconnectTimer = null;
+
+/** Single reconnect scheduler - prevents double startSock() from the close
+ *  handler AND the watchdog firing at the same time. */
+function scheduleReconnect(reason, delayMs) {
+  if (reconnectTimer) {
+    LOG("conn", `reconnect already scheduled (${reason}) - keeping existing timer`);
+    return;
+  }
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    startSock(reason);
+  }, delayMs);
+  if (reconnectTimer.unref) reconnectTimer.unref();
+  LOG("conn", `reconnect scheduled in ${delayMs}ms (${reason})`);
+}
 
 function wire(s, saveCreds) {
   s.ev.on("creds.update", async () => {
@@ -378,6 +398,11 @@ function wire(s, saveCreds) {
     }
 
     if (connection === "close") {
+      // A socket that has already been replaced must not trigger a reconnect.
+      if (s !== sock) {
+        LOG("conn", "close from a stale socket - ignored");
+        return;
+      }
       rt.connected = false;
       const code = lastDisconnect && lastDisconnect.error && lastDisconnect.error.output
         ? lastDisconnect.error.output.statusCode
@@ -397,12 +422,12 @@ function wire(s, saveCreds) {
         } catch (e) {
           FAIL("auth", e);
         }
-        setTimeout(() => startSock("after-logout"), 3000);
+        scheduleReconnect("after-logout", 3000);
       } else {
         const wait = Math.min(30000, 3000 * (rt.reconnects + 1));
         rt.reconnects++;
         LOG("conn", `reconnecting in ${wait}ms (attempt ${rt.reconnects})`);
-        setTimeout(() => startSock("after-close"), wait);
+        scheduleReconnect("after-close", wait);
       }
     }
   });
@@ -413,7 +438,7 @@ function wire(s, saveCreds) {
     rt.lastEventAt = Date.now();
     LOG("msg", `messages.upsert type=${type} count=${(messages || []).length} requestId=${requestId}`);
 
-    if (type !== "notify") {
+    if (type !== "notify" && type !== "append") {
       rt.counters.skipped++;
       LOG("msg", `ignored batch (type=${type})`);
       return;
@@ -451,6 +476,29 @@ function wire(s, saveCreds) {
           continue;
         }
 
+        // ----------------------------------------------------------------
+        // Baileys delivers messages that arrived while the device was
+        // OFFLINE (Render sleep / dropped socket) with type = "append",
+        // not "notify"  ->  process-message.js:1432
+        //   upsertMessage(msg, node.attrs.offline ? 'append' : 'notify')
+        // Ignoring "append" therefore silently loses every message that
+        // arrived while the instance was asleep.
+        // To avoid answering ancient history-sync dumps we only reply to
+        // offline messages newer than OFFLINE_REPLY_WINDOW_MIN minutes.
+        // ----------------------------------------------------------------
+        let offline = false;
+        if (type === "append") {
+          const ts = (msg.messageTimestamp || (msg.key && msg.key.timestamp) || 0);
+          const ageMin = ts ? Math.round((Date.now() / 1000 - ts) / 60) : 99999;
+          if (ageMin > OFFLINE_REPLY_WINDOW_MIN) {
+            rt.counters.skipped++;
+            LOG("msg", `skip stale offline message (${ageMin} min old) id=${msg.key.id}`);
+            continue;
+          }
+          offline = true;
+          LOG("msg", `offline message picked up (${ageMin} min old) id=${msg.key.id}`);
+        }
+
         // ---- MARK AS READ / SEEN (blue ticks) -------------------------
         try {
           await s.readMessages([msg.key]);
@@ -466,7 +514,7 @@ function wire(s, saveCreds) {
         rt.lastMessageAt = Date.now();
         LOG(
           "msg",
-          `INBOUND ${jid} voice=${voice} text="${(text || "").slice(0, 90).replace(/\n/g, " ")}"`
+          `INBOUND ${jid} type=${type} voice=${voice} text="${(text || "").slice(0, 90).replace(/\n/g, " ")}"`
         );
 
         enqueue(jid, () => handleMessage(s, jid, text, voice));
@@ -507,6 +555,21 @@ async function startSock(reason) {
     const version = await resolveVersion();
     const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
     LOG("auth", `session loaded: registered=${!!state.creds.registered} me=${state.creds.me ? state.creds.me.id : "-"}`);
+
+    // Baileys v7 only flips creds.registered to true when the device is paired
+    // through a QR/link-code. A session restored from disk therefore keeps
+    // registered=false even though it logs in perfectly (the real gate is
+    // creds.me). Normalise it so the state we persist back to disk is
+    // self-consistent and future Baileys releases agree.
+    if (state.creds.me && !state.creds.registered) {
+      state.creds.registered = true;
+      try {
+        await saveCreds();
+        LOG("auth", "creds.registered normalised false -> true (creds.me present)");
+      } catch (e) {
+        FAIL("auth", e);
+      }
+    }
 
     const logger = pino({ level: LOG_LEVEL });
     const newSock = makeWASocket({
@@ -581,17 +644,20 @@ server.listen(PORT, HOST, () => {
 setInterval(() => {
   rt.uptimeSec = Math.round((Date.now() - BOOT) / 1000);
   if (!sock) return;
-  const ready = sock.ws ? sock.ws.readyState : -1;
-  if (ready !== 1) {
-    LOG("watch", `websocket not OPEN (readyState=${ready}) - forcing reconnect`);
+  // sock.ws is Baileys' own WebSocketClient wrapper - it exposes isOpen /
+  // isClosed getters, NOT a raw ws.readyState number.
+  const wsOpen = sock.ws && typeof sock.ws.isOpen === "boolean" ? sock.ws.isOpen : null;
+  const wsClosed = sock.ws && typeof sock.ws.isClosed === "boolean" ? sock.ws.isClosed : null;
+  if (wsOpen === false || wsClosed === true) {
+    LOG("watch", `websocket not OPEN (isOpen=${wsOpen} isClosed=${wsClosed}) - forcing reconnect`);
     try { sock.end(new Error("stale socket")); } catch (_) {}
-    setTimeout(() => startSock("watchdog"), 2000);
+    scheduleReconnect("watchdog", 2000);
     return;
   }
   if (rt.lastEventAt && Date.now() - rt.lastEventAt > STALE_MS) {
     LOG("watch", `no events for ${Math.round((Date.now() - rt.lastEventAt) / 1000)}s - forcing reconnect`);
     try { sock.end(new Error("stale connection")); } catch (_) {}
-    setTimeout(() => startSock("watchdog-stale"), 2000);
+    scheduleReconnect("watchdog-stale", 2000);
   }
 }, HEARTBEAT_MS);
 

@@ -3,8 +3,14 @@ node_modules/
 .venv/
 venv/
 
-# WhatsApp session (created at runtime; NEVER commit - it is a credential)
-auth_info_baileys/
+# WhatsApp session — INTENTIONALLY TRACKED.
+# The Render deployment restores the WhatsApp login from these files, so a
+# refreshed session MUST be committed for the bot to auto-login without a QR.
+# SECURITY: this folder is a credential. Keep the GitHub repo PRIVATE and
+# prefer a Render persistent disk mounted at /app/auth_info_baileys.
+# To stop tracking it later:  git rm -r --cached auth_info_baileys
+# auth_info_baileys/last_qr.txt
+# auth_info_baileys/.probe
 
 # Python caches
 __pycache__/

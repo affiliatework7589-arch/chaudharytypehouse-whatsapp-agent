@@ -6,17 +6,43 @@ Zero paid APIs · Fully local AI · Inbound-only WhatsApp agent
 
 ## 0. TL;DR — why messages were not marked read / not answered
 
-| # | Root cause | Where | Fix applied |
+All findings below were **reproduced against the real Baileys 7.0.0-rc14 source**
+in `node_modules/@whiskeysockets/baileys` and confirmed with a live connection
+using a copy of the committed session.
+
+| # | Root cause | Evidence | Fix applied |
 |---|---|---|---|
-| 1 | **Render free tier has no Background Workers** — only Web Services. A web service that does not bind `$PORT` is marked unhealthy and the container is restarted in a loop, so the WhatsApp socket never survived. | `render.yaml` was `type: worker` | `render.yaml` is now `type: web` + `healthCheckPath: /health`; the bridge now runs a tiny HTTP server on `$PORT` |
-| 2 | **`readMessages()` was never called** → WhatsApp never sent the read receipt → messages stayed unread in the sender's chat. | `whatsapp_bridge.js` | `await sock.readMessages([msg.key])` on every inbound message |
-| 3 | **`markOnlineOnConnect: false`** → the linked device never announced "available", so presence/typing indicator and read receipts were not delivered. | `whatsapp_bridge.js` | now `true` (Baileys default) |
-| 4 | **`syncFullHistory: false`** → anything that arrived while the Render instance was asleep was never delivered. | `whatsapp_bridge.js` | now `true` |
-| 5 | **`fetchLatestBaileysVersion()` fetches from raw.githubusercontent.com** — if that call failed the process exited and Render restarted it → re-auth loop. | `whatsapp_bridge.js` | pinned fallback version `[2,3000,1043857760]` + try/catch |
-| 6 | **Reconnect leaked sockets** — `startSock()` was called again without closing the old socket. | `whatsapp_bridge.js` | old socket is ended first, backoff reconnect, single module-level socket |
-| 7 | **401 / logged-out was not handled** → stale creds kept looping. | `whatsapp_bridge.js` | on `loggedOut` the session folder is wiped so a fresh QR is issued |
-| 8 | **No visibility** — the old code logged almost nothing. | `whatsapp_bridge.js` | timestamped `LOG`/`FAIL` traces + `/health` + `/qr` + `/qr` file |
-| 9 | **Free tier 15-minute sleep** kills the WebSocket. | Render | `/health` endpoint + external pinger (UptimeRobot) every 5 min + in-process watchdog |
+| 1 | **Render free tier has no Background Workers** — only Web Services. A web service that does not bind `$PORT` is marked unhealthy and the container is restarted in a loop, so the WhatsApp socket never survived. | `render.yaml` was `type: worker` | `render.yaml` is now `type: web` + `healthCheckPath: /health`; the bridge now runs an HTTP server on `$PORT` |
+| 2 | **`readMessages()` was never called** → WhatsApp never sent the read receipt → messages stayed unread in the sender's chat. | `sock.readMessages` exists in `lib/Socket/messages-send.js` | `await sock.readMessages([msg.key])` on every inbound message |
+| 3 | **`markOnlineOnConnect: false`** → the linked device never announced "available", so presence/typing indicator and read receipts were not delivered. | Baileys default is `true` (`lib/Defaults/index.js`) | now `true` |
+| 4 | **`type !== "notify"` dropped every OFFLINE message.** Baileys delivers messages that arrived while the device was disconnected as **`type: "append"`**, not `"notify"`. | `lib/Socket/messages-recv.js:1432` → `upsertMessage(msg, node.attrs.offline ? 'append' : 'notify')` | both `'notify'` and `'append'` are processed (with a 60-minute freshness guard for history-sync dumps) |
+| 5 | **`syncFullHistory: false`** → anything that arrived while the Render instance was asleep was never delivered. | Baileys default is `true` | now `true` |
+| 6 | **The watchdog killed a healthy connection every 30 s.** `sock.ws` is Baileys' own `WebSocketClient` wrapper — it exposes `isOpen`/`isClosed` getters, **not** a raw `ws.readyState` number, so `readyState` was `undefined` and the check `readyState !== 1` was always true. | `lib/Socket/Client/websocket.js` | watchdog now uses `sock.ws.isOpen` / `sock.ws.isClosed` |
+| 7 | **Reconnect leaked sockets** — `startSock()` was called again without closing the old socket, and both the close handler and the watchdog could schedule a restart. | — | old socket is ended first, a single `scheduleReconnect()` timer is used, and a close event from a replaced socket is ignored |
+| 8 | **`fetchLatestBaileysVersion()` fetches from raw.githubusercontent.com** — if that call failed the process exited and Render restarted it → re-auth loop. | `lib/Utils/generics.js` | pinned fallback version `[2,3000,1043857760]` + try/catch |
+| 9 | **401 / logged-out was not handled** → stale creds kept looping. | — | on `loggedOut` the session folder is wiped so a fresh QR is issued |
+| 10 | **No visibility** — the old code logged almost nothing. | — | timestamped `LOG`/`FAIL` traces + `/health` + `/qr` + `/qr` file |
+
+### Verified session status (good news)
+
+The `auth_info_baileys` folder that is committed to GitHub is **valid and works**.
+Live test against a copy of it:
+
+```
+[+    1s] auth   session loaded: registered=false me=923277450361:5@s.whatsapp.net
+[+    1s] auth   creds.registered normalised false -> true (creds.me present)
+[+    3s] conn   OPEN - connected to WhatsApp (inbound-only mode active)
+```
+
+- `creds.json` is **tracked and committed** (it is the file that matters — it holds
+  `noiseKey`, `signedIdentityKey`, `signedPreKey`, `advSecretKey`, `me`).
+- `creds.registered` was `false`, but in Baileys v7 that flag is **write-only**
+  (it is set to `true` only when a device is paired via QR — `lib/Socket/messages-recv.js:940`).
+  The real login gate is `creds.me`, which is present, so the session logs in
+  **without any QR**. The bridge now normalises the flag and persists it.
+- `identity-key-144157037326429_1.0.json`, `session-144157037326429_1.0.json`,
+  `device-list-*.json` and `app-state-sync-key-*.json` must all stay in the folder —
+  they are the Signal identity for the LID device.
 
 ---
 
@@ -44,12 +70,18 @@ Chaudhary Type House/
 `auth_info_baileys/` is **created at runtime** and is intentionally **not** committed.
 It holds the WhatsApp session — treat it exactly like a password.
 
-> **Do not upload `auth_info_baileys` to GitHub.** A session file committed to a
-> public repo is a credential leak, and Render's filesystem is ephemeral anyway.
-> Use a Render **persistent disk** (paid plan) or re-scan the QR after a deploy
-> (free plan). The session folder must contain `creds.json`
-> (`"registered": true`, `"me": {...}`) plus `pre-keys-*.json`,
-> `session-*.json`, `app-state-sync-key-*.json`.
+> **Do not delete `auth_info_baileys` from the repo.** The session is
+> **intentionally tracked** because the Render deployment restores the WhatsApp
+> login from these files — that is what makes the bot auto-login with **no QR
+> scan** after every deploy. The folder must contain:
+> `creds.json` (holds `noiseKey`, `signedIdentityKey`, `signedPreKey`,
+> `advSecretKey`, `me`, `registered`), `identity-key-*.json`,
+> `session-*.json`, `device-list-*.json` and `app-state-sync-key-*.json`.
+>
+> **SECURITY:** the session is a credential. Keep the GitHub repo **PRIVATE**.
+> The stronger setup is a Render **persistent disk** mounted at
+> `/app/auth_info_baileys` (paid plan) — then the session never has to be
+> committed at all.
 
 ---
 

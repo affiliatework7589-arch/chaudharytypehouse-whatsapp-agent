@@ -20,6 +20,10 @@ services:
         value: "5000"
       - key: TYPING_MAX_MS
         value: "10000"
+      - key: OFFLINE_REPLY_WINDOW_MIN
+        value: "60"
+      - key: STALE_MS
+        value: "1200000"
       # NOTE: a persistent disk can be attached later from the Render dashboard
       # (Disks tab -> Mount Path: /app/auth_info_baileys). Disks require a paid plan.
       # On the free tier the session survives instance sleep, but NOT a new deploy.
