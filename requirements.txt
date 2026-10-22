@@ -1,0 +1,13 @@
+# Chaudhary Type House & Property Advisors — 100% FREE local system
+# Every single package below is free & open-source. No API keys required.
+fastapi>=0.110
+uvicorn[standard]>=0.27
+python-multipart>=0.0.9
+pydantic>=2.5
+Pillow>=10.0
+imageio-ffmpeg>=0.4.9
+edge-tts>=6.1
+playwright>=1.40
+arabic-reshaper>=3.0
+python-bidi>=0.4
+requests>=2.31

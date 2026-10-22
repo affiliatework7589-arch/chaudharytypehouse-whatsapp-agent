@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin Control Panel — Chaudhary Type House &amp; Property Advisors</title>
+<meta name="theme-color" content="#04352b">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%2304352b'/><text x='32' y='43' font-size='30' font-family='Segoe UI,Arial' font-weight='bold' fill='%23d4af37' text-anchor='middle'>C</text></svg>">
+<style>
+:root{
+  --em-d:#04352b; --em:#046b4d; --em-l:#0fa678; --gold:#d4af37; --gold-l:#f2d579;
+  --ink:#e8f5f0; --mut:#8fb5a8; --panel:#0a2f27; --panel2:#0d3a30; --line:#174c40;
+  --danger:#e5484d; --warn:#f5a524; --ok:#30a46c;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:linear-gradient(160deg,#031f19,#062b23 60%,#04231c);color:var(--ink);
+  font-family:"Segoe UI",Tahoma,system-ui,sans-serif;min-height:100vh;font-size:14px;line-height:1.6}
+a{color:var(--gold-l);text-decoration:none}
+.wrap{width:min(1420px,96vw);margin-inline:auto}
+h1,h2,h3,h4{line-height:1.25}
+.mono{font-family:"Cascadia Mono",Consolas,monospace}
+
+/* ===== TOP ===== */
+header{background:linear-gradient(120deg,var(--em-d),#075b45);border-bottom:2px solid var(--gold);padding:14px 0;position:sticky;top:0;z-index:40}
+.hrow{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.logo{width:48px;height:48px;border-radius:12px;background:linear-gradient(145deg,var(--gold),#a8842a);color:#2a2200;display:grid;place-items:center;font-weight:900;font-size:1.4rem;flex:none}
+header h1{font-size:1.15rem;color:#fff}
+header .ur{font-family:"Jameel Noori Nastaleeq","Noto Nastaliq Urdu",serif;color:var(--gold-l);font-size:1rem;direction:rtl}
+.hmeta{display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-top:2px}
+.hmeta b{color:var(--gold-l)}
+.hbtns{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+
+.btn{border:0;cursor:pointer;font:inherit;font-weight:700;font-size:.84rem;padding:9px 14px;border-radius:10px;display:inline-flex;align-items:center;gap:7px;transition:.16s;white-space:nowrap}
+.btn:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.b-gold{background:linear-gradient(135deg,var(--gold-l),var(--gold));color:#2c2300}
+.b-wa{background:linear-gradient(135deg,#25D366,#0c9c58);color:#fff}
+.b-em{background:var(--em-l);color:#032b22}
+.b-red{background:var(--danger);color:#fff}
+.b-ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+.b-sm{padding:6px 10px;font-size:.78rem;border-radius:8px}
+
+/* ===== KILL SWITCH BAR ===== */
+.killbar{background:linear-gradient(90deg,#5a1414,#7d1d1d);border-bottom:1px solid #a33;padding:9px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-weight:800;font-size:.86rem}
+.killbar.ok{background:linear-gradient(90deg,#0a4a37,#0d6b4f);border-bottom-color:#1d8a68}
+.killbar .sp{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* ===== TABS ===== */
+nav.tabs{display:flex;gap:6px;padding:12px 0 0;overflow-x:auto}
+nav.tabs button{background:var(--panel);border:1px solid var(--line);border-bottom:0;color:var(--mut);padding:10px 16px;border-radius:10px 10px 0 0;cursor:pointer;font:inherit;font-weight:700;font-size:.85rem;white-space:nowrap}
+nav.tabs button.on{background:var(--panel2);color:var(--gold-l);border-color:var(--gold)}
+.view{display:none;padding:18px 0 40px}
+.view.on{display:block}
+
+/* ===== GRID / CARDS ===== */
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+.card h3{font-size:1rem;color:var(--gold-l);margin-bottom:12px;display:flex;align-items:center;gap:9px}
+.card h3 .ico{width:34px;height:34px;border-radius:9px;background:rgba(212,175,55,.14);display:grid;place-items:center;font-size:1.05rem;flex:none}
+
+/* ===== STATS ===== */
+.stat{background:linear-gradient(140deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:15px;padding:16px;text-align:center}
+.stat b{display:block;font-size:1.9rem;color:var(--gold-l);line-height:1.1}
+.stat span{font-size:.76rem;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
+.stat.ok b{color:#5ee0a0}.stat.warn b{color:var(--warn)}.stat.bad b{color:#ff8b8b}
+
+/* ===== AGENT CARD ===== */
+.agent{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:17px;position:relative;overflow:hidden;transition:.18s}
+.agent::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--gold),var(--em-l))}
+.agent.running{border-color:#1d8a68;box-shadow:0 0 0 1px rgba(45,211,150,.18),0 14px 30px -18px rgba(45,211,150,.4)}
+.agent.paused{border-color:var(--warn)}
+.agent.error{border-color:var(--danger)}
+.ah{display:flex;gap:11px;align-items:center;margin-bottom:11px}
+.ah .ai{width:42px;height:42px;border-radius:11px;background:linear-gradient(145deg,var(--em),var(--em-d));display:grid;place-items:center;font-size:1.25rem;flex:none;border:1px solid var(--gold)}
+.ah b{font-size:.95rem;color:#fff}
+.ah p{font-size:.77rem;color:var(--muted)}
+.pill{font-size:.68rem;font-weight:800;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.5px}
+.p-run{background:rgba(48,164,108,.2);color:#5ee0a0;border:1px solid #1d8a68}
+.p-stop{background:rgba(143,181,168,.15);color:var(--muted);border:1px solid var(--line)}
+.p-err{background:rgba(229,72,77,.18);color:#ff9b9e;border:1px solid #a33}
+.p-pause{background:rgba(245,165,36,.16);color:#ffc96b;border:1px solid #a3721a}
+.adetail{background:#062b23;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:.77rem;color:var(--muted);margin:10px 0;min-height:42px}
+.adetail div{margin:2px 0}
+.abtns{display:flex;gap:7px;flex-wrap:wrap}
+.switch{position:relative;width:44px;height:24px;flex:none;cursor:pointer}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:#174c40;border-radius:999px;transition:.2s}
+.slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#8fb5a8;border-radius:50%;transition:.2s}
+.switch input:checked + .slider{background:var(--ok)}
+.switch input:checked + .slider:before{transform:translateX(20px);background:#fff}
+
+/* ===== TABLES ===== */
+.tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:720px}
+th{background:var(--panel2);color:var(--gold-l);text-align:left;padding:10px 12px;font-size:.74rem;text-transform:uppercase;letter-spacing:.5px;position:sticky;top:0}
+td{padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}
+tr:hover td{background:rgba(15,166,120,.06)}
+.tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:800}
+.t-hot{background:rgba(229,72,77,.2);color:#ff9b9e}
+.t-warm{background:rgba(245,165,36,.18);color:#ffc96b}
+.t-cold{background:rgba(143,181,168,.16);color:var(--muted)}
+.t-new{background:rgba(79,143,255,.18);color:#93c0ff}
+.t-booked{background:rgba(48,164,108,.2);color:#5ee0a0}
+.t-done{background:rgba(48,164,108,.2);color:#5ee0a0}
+.t-draft{background:rgba(143,181,168,.16);color:var(--muted)}
+.t-published{background:rgba(48,164,108,.2);color:#5ee0a0}
+
+/* ===== LOGS ===== */
+.logbox{background:#031f19;border:1px solid var(--line);border-radius:12px;height:330px;overflow-y:auto;padding:10px;font-size:.78rem}
+.logline{display:flex;gap:9px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.logline .t{color:#547a6d;flex:none;font-size:.74rem}
+.logline .s{color:var(--gold-l);flex:none;min-width:118px;font-weight:700}
+.logline .m{color:#b9d8ce;word-break:break-word}
+.logline.ERROR .m{color:#ff9b9e}.logline.WARN .m{color:#ffc96b}
+
+/* ===== FORMS ===== */
+label.f{display:block;font-size:.74rem;font-weight:800;color:var(--gold-l);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+input,select,textarea{width:100%;background:#062b23;border:1.5px solid var(--line);color:var(--ink);
+  padding:10px 12px;border-radius:10px;font:inherit;font-size:.86rem}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--em-l);box-shadow:0 0 0 3px rgba(15,166,120,.16)}
+textarea{resize:vertical;min-height:80px;font-family:inherit}
+.field{margin-bottom:12px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.row>*{flex:1;min-width:170px}
+
+/* ===== BROWSER / QR ===== */
+.bsess{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:15px}
+.bhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.bdot{width:10px;height:10px;border-radius:50%;background:#547a6d;flex:none}
+.bdot.on{background:#30d68a;box-shadow:0 0 10px #30d68a}
+.bdot.err{background:#ff5f63}
+.qr{background:#041c17;border:1px dashed var(--line);border-radius:12px;text-align:center;padding:12px;margin-top:10px}
+.qr img{max-width:100%;border-radius:8px}
+.qr .hint{font-size:.76rem;color:var(--muted);margin-top:7px}
+
+/* ===== CONTENT ===== */
+.tabs2{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tabs2 button{background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:7px 13px;border-radius:9px;cursor:pointer;font:inherit;font-weight:700;font-size:.8rem}
+.tabs2 button.on{background:var(--gold);color:#2c2300;border-color:var(--gold)}
+.preview{background:#fffdf5;border-radius:12px;padding:16px;color:#06231c;font-size:.86rem;white-space:pre-wrap;max-height:340px;overflow-y:auto;border:1px solid #e5dcc0}
+.preview h4{color:#046b4d;margin-bottom:8px}
+.media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.media-grid a{display:block;background:#062b23;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.media-grid img,.media-grid video{width:100%;height:150px;object-fit:cover;display:block}
+.media-grid span{display:block;padding:6px 8px;font-size:.68rem;color:var(--muted);word-break:break-all}
+
+.jobs{display:grid;gap:10px}
+.job{background:#062b23;border:1px solid var(--line);border-radius:11px;padding:11px 13px}
+.bar{height:7px;background:#0b3a30;border-radius:99px;overflow:hidden;margin:7px 0}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--em-l),var(--gold));transition:.4s}
+
+.note{background:rgba(212,175,55,.09);border:1px solid rgba(212,175,55,.32);border-radius:11px;padding:11px 13px;font-size:.8rem;color:#e6d3a0;margin-bottom:14px}
+.note b{color:var(--gold-l)}
+.ok-note{background:rgba(48,164,108,.1);border-color:rgba(48,164,108,.35);color:#a5e8c6}
+.bad-note{background:rgba(229,72,77,.1);border-color:rgba(229,72,77,.4);color:#ffb3b5}
+
+.toast{position:fixed;right:18px;bottom:18px;z-index:200;background:var(--em-d);border:1px solid var(--gold);color:#fff;padding:12px 18px;border-radius:12px;font-weight:700;box-shadow:0 14px 34px -14px #000;transform:translateY(150%);transition:.3s;max-width:88vw}
+.toast.show{transform:none}
+.toast.err{background:#6b1416;border-color:#e5484d}
+
+.dot{width:8px;height:8px;border-radius:50%;background:#547a6d;display:inline-block;margin-right:6px}
+.dot.live{background:#30d68a;animation:bl 1.6s infinite}
+@keyframes bl{50%{opacity:.35}}
+.spinners{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.25);border-top-color:var(--gold);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.sp{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.sp>div{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:7px 13px;font-size:.78rem;color:var(--muted)}
+.sp b{color:var(--gold-l)}
+.sp .ok{color:#5ee0a0}.sp .no{color:#ff8b8b}
+@media(max-width:640px){header .hbtns{width:100%}.view{padding-top:12px}.card{padding:14px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap hrow">
+    <div class="logo">C</div>
+    <div>
+      <h1>Chaudhary Type House &amp; Property Advisors — Admin Control Panel</h1>
+      <div class="ur">چوہدری ٹائپ ہاؤس اینڈ پراپرٹی اڈوایزرز — چشتیاں</div>
+      <div class="hmeta">
+        <span>👤 <b>Chaudhary Muhammad Sanaullah</b></span>
+        <span>📍 <b>Near Baldia Chowk, City Chishtian</b></span>
+        <span>🕘 <b>8:00 AM – 8:00 PM</b></span>
+        <span>📞 <b><a href="https://wa.me/923277450361">0327-7450361</a></b></span>
+        <span>🌐 <a href="https://chtype.online" target="_blank" rel="noopener">chtype.online</a></span>
+      </div>
+    </div>
+    <div class="hbtns">
+      <a class="btn b-ghost" href="/" target="_blank">🌐 Public Website</a>
+      <a class="btn b-wa" href="https://wa.me/923277450361" target="_blank" rel="noopener">💬 WhatsApp</a>
+      <button class="btn b-gold" id="btnAll">▶️ Sab Agents On</button>
+      <button class="btn b-ghost" id="btnRefresh">🔄 Refresh</button>
+    </div>
+  </div>
+</header>
+
+<div class="killbar ok" id="killbar">
+  <div class="wrap" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;width:min(1420px,96vw)">
+    <span id="killText">✅ SYSTEM LIVE — Agents chal rahe hain</span>
+    <span class="sp">
+      <label class="switch" title="Master auto-send switch"><input type="checkbox" id="masterSend" checked><span class="slider"></span></label>
+      <span style="font-weight:700">Master Auto-Send</span>
+      <button class="btn b-red b-sm" id="btnKill">🛑 EMERGENCY KILL SWITCH</button>
+    </span>
+  </div>
+</div>
+
+<div class="wrap">
+  <nav class="tabs">
+    <button class="on" data-v="v-dash">📊 Dashboard</button>
+    <button data-v="v-agents">🤖 5 Agents</button>
+    <button data-v="v-leads">🗂️ Leads</button>
+    <button data-v="v-browser">🌐 Browser &amp; QR Login</button>
+    <button data-v="v-content">✍️ Content Factory</button>
+    <button data-v="v-video">🎬 Video Maker</button>
+    <button data-v="v-logs">📋 Live Logs</button>
+    <button data-v="v-setup">⚙️ Setup &amp; Help</button>
+  </nav>
+</div>
+
+<!-- ================= DASHBOARD ================= -->
+<div class="wrap view on" id="v-dash">
+  <div class="sp" id="engines"></div>
+  <div class="grid g4" style="margin-bottom:16px">
+    <div class="stat"><b id="sTotal">0</b><span>Total Leads</span></div>
+    <div class="stat ok"><b id="sToday">0</b><span>Aaj Ke Leads</span></div>
+    <div class="stat warn"><b id="sHot">0</b><span>🔥 HOT Leads</span></div>
+    <div class="stat"><b id="sReplies">0</b><span>Auto Replies</span></div>
+  </div>
+  <div class="grid g2">
+    <div class="card">
+      <h3><span class="ico">🤖</span> Agents — Live Status</h3>
+      <div class="grid" id="agentMini" style="gap:9px"></div>
+    </div>
+    <div class="card">
+      <h3><span class="ico">📈</span> Leads by Source</h3>
+      <div id="srcChart" class="grid" style="gap:8px"></div>
+      <h3 style="margin-top:18px"><span class="ico">🎯</span> Agle Steps (Hot Leads)</h3>
+      <div id="nextSteps" style="font-size:.82rem;color:var(--muted)"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3><span class="ico">🕘</span> Latest Activity</h3>
+    <div class="logbox" id="logMini" style="height:220px"></div>
+  </div>
+</div>
+
+<!-- ================= AGENTS ================= -->
+<div class="wrap view" id="v-agents">
+  <div class="note"><b>How it works (100% FREE):</b> Ye koi paid API nahi use karte. Playwright aap ke computer par ek real browser kholta hai — aap ek baar QR scan karte hain, phir login hamesha yaad rehta hai. <b>Koi WhatsApp Cloud API, Meta Graph API ya TikTok API nahi — koi paisa nahi.</b> Har agent ke paas apna <b>Auto-Send toggle</b> hai, aur upar ek <b>Emergency Kill Switch</b> hai.</div>
+  <div class="grid g2" id="agentGrid"></div>
+</div>
+
+<!-- ================= LEADS ================= -->
+<div class="wrap view" id="v-leads">
+  <div class="card" style="margin-bottom:14px">
+    <h3><span class="ico">🗂️</span> All Leads (SQLite — live)</h3>
+    <div class="row" style="margin-bottom:12px">
+      <div><label class="f">Filter</label><select id="leadFilter"><option value="">All</option><option value="new">New</option><option value="booked">Booked</option></select></div>
+      <div><label class="f">Search</label><input id="leadSearch" placeholder="naam / phone / service…"></div>
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <button class="btn b-gold" id="btnCsv">⬇️ CSV Download</button>
+        <button class="btn b-ghost" id="btnLeadReload">🔄 Reload</button>
+      </div>
+    </div>
+    <div class="tbl-wrap" style="max-height:560px;overflow-y:auto">
+      <table>
+        <thead><tr><th>Score</th><th>Name</th><th>Phone</th><th>Service</th><th>Message / Query</th><th>Source</th><th>Status</th><th>Visit</th><th>When</th><th></th></tr></thead>
+        <tbody id="leadBody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><h3><span class="ico">📅</span> Appointments</h3>
+      <div class="tbl-wrap" style="max-height:300px;overflow-y:auto"><table>
+        <thead><tr><th>Name</th><th>Phone</th><th>Service</th><th>Date</th><th>Time</th></tr></thead>
+        <tbody id="apptBody"></tbody></table></div></div>
+    <div class="card"><h3><span class="ico">💬</span> Conversations (WhatsApp / IG / FB / TikTok)</h3>
+      <div class="tbl-wrap" style="max-height:300px;overflow-y:auto"><table>
+        <thead><tr><th>Channel</th><th>Contact</th><th>Last Incoming</th><th>Our Reply</th><th>When</th></tr></thead>
+        <tbody id="convBody"></tbody></table></div></div>
+  </div>
+</div>
+
+<!-- ================= BROWSER ================= -->
+<div class="wrap view" id="v-browser">
+  <div class="note"><b>Pehli baar login:</b> Neeche "Start Browser" dabayein → ek asli browser window khulegi → usme QR scan karein (WhatsApp) ya login kar lein (Instagram / Facebook / TikTok). Login <b>ek baar</b> hota hai aur hamesha yaad rehta hai. QR code yahin dashboard mein bhi dikh jayega.</div>
+  <div class="note ok-note" style="display:none" id="playNote"></div>
+  <div class="grid g2" id="browserGrid"></div>
+</div>
+
+<!-- ================= CONTENT ================= -->
+<div class="wrap view" id="v-content">
+  <div class="card" style="margin-bottom:14px">
+    <h3><span class="ico">✍️</span> Free Content Generator</h3>
+    <div class="row">
+      <div><label class="f">Platform</label>
+        <select id="gPlatform"><option value="instagram">Instagram (banner + caption + 15 hashtags)</option><option value="facebook">Facebook (educational post)</option><option value="tiktok">TikTok (45s viral script)</option><option value="whatsapp">WhatsApp Status / Broadcast</option></select></div>
+      <div><label class="f">Topic</label><select id="gTopic"></select></div>
+      <div><label class="f">Language</label><select id="gLang"><option value="roman">Roman Urdu</option><option value="urdu">اردو (Urdu Script)</option></select></div>
+      <div><label class="f">Banner</label><select id="gBanner"><option value="1">Banao (free)</option><option value="0">Sirf text</option></select></div>
+    </div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:6px">
+      <button class="btn b-gold" id="btnGen">✨ Generate Content</button>
+      <button class="btn b-em" id="btnGen3">📦 3 Posts Ek Saath (IG)</button>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3><span class="ico">👁️</span> Preview</h3>
+      <div id="genPreview" class="preview">Abhi tak kuch generate nahi hua.<br><br>Upar platform chun kar <b>Generate Content</b> dabayein — caption, hashtags aur banner foran ban jayenge.</div>
+      <div id="genMedia" style="margin-top:12px"></div>
+    </div>
+    <div class="card">
+      <h3><span class="ico">📚</span> Content Queue</h3>
+      <div class="tabs2" id="queueTabs">
+        <button class="on" data-p="">All</button><button data-p="instagram">Instagram</button><button data-p="facebook">Facebook</button><button data-p="tiktok">TikTok</button>
+      </div>
+      <div class="tbl-wrap" style="max-height:420px;overflow-y:auto"><table>
+        <thead><tr><th>Platform</th><th>Topic</th><th>Media</th><th>Status</th><th></th></tr></thead>
+        <tbody id="queueBody"></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= VIDEO ================= -->
+<div class="wrap view" id="v-video">
+  <div class="note"><b>100% FREE video pipeline:</b> Script → <b>Microsoft edge-tts</b> (free neural Urdu/Hindi voice, no key, no signup) → word-by-word timing → <b>Pillow</b> frames with synced Urdu captions → <b>FFmpeg</b> (free binary) → 1080×1920 H.264 MP4 ready for TikTok / Reels / Shorts.</div>
+  <div class="grid g2">
+    <div class="card">
+      <h3><span class="ico">🎬</span> Viral Video Maker</h3>
+      <div class="field"><label class="f">Topic</label><select id="vTopic"></select></div>
+      <div class="row">
+        <div><label class="f">Language</label><select id="vLang"><option value="roman">Roman Urdu (Hindi voice)</option><option value="urdu">اردو (Urdu voice)</option></select></div>
+        <div><label class="f">Voice</label><select id="vVoice"><option value="">Auto</option><option value="ur-PK-UzmaNeural">Urdu — Uzma (female)</option><option value="ur-PK-SalmaNeural">Urdu — Salma</option><option value="hi-IN-SwaraNeural">Hindi — Swara</option><option value="en-US-AriaNeural">English — Aria</option></select></div>
+      </div>
+      <button class="btn b-gold" id="btnVideo">🎥 Script + Voice-over + MP4 Banao</button>
+      <div id="scriptBox" class="preview" style="margin-top:12px">Video banate hi 45-second ka script yahan aa jayega — hook, beats aur CTA.</div>
+    </div>
+    <div class="card">
+      <h3><span class="ico">⏳</span> Render Jobs</h3>
+      <div class="jobs" id="jobsBox"><div style="color:var(--muted);font-size:.83rem">Abhi koi render job nahi.</div></div>
+      <h3 style="margin-top:18px"><span class="ico">📁</span> Generated Media</h3>
+      <div class="media-grid" id="mediaGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= LOGS ================= -->
+<div class="wrap view" id="v-logs">
+  <div class="card">
+    <h3><span class="ico">📋</span> Live System Log <span class="dot live" id="logDot"></span></h3>
+    <div class="row" style="margin-bottom:10px">
+      <div><label class="f">Source</label><select id="logFilter"><option value="">All</option></select></div>
+      <div style="display:flex;gap:8px;align-items:flex-end"><button class="btn b-ghost b-sm" id="btnLogReload">🔄 Reload</button></div>
+    </div>
+    <div class="logbox" id="logBox" style="height:520px"></div>
+  </div>
+</div>
+
+<!-- ================= SETUP ================= -->
+<div class="wrap view" id="v-setup">
+  <div class="grid g2">
+    <div class="card">
+      <h3><span class="ico">💸</span> Zero-Cost Guarantee</h3>
+      <div style="font-size:.86rem;color:var(--muted)">
+        <p style="margin-bottom:10px">Ye poora system <b style="color:var(--gold-l)">bilkul muft</b> hai:</p>
+        <ul style="padding-left:18px;list-style:disc">
+          <li>❌ Koi WhatsApp Cloud API nahi</li>
+          <li>❌ Koi Meta Graph API nahi</li>
+          <li>❌ Koi TikTok Developer API nahi</li>
+          <li>❌ Koi paid webhook / paid SaaS nahi</li>
+          <li>✅ Sirf free Python libraries (FastAPI, Playwright, Pillow, FFmpeg)</li>
+          <li>✅ Free Microsoft <b>edge-tts</b> voice-over (no key, no signup)</li>
+          <li>✅ Local SQLite database</li>
+          <li>AI assistant <b>offline rule engine</b> par chalta hai — API key ki zaroorat nahi</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <h3><span class="ico">🚀</span> Pehli Baar Kaise Chalayein</h3>
+      <ol style="font-size:.86rem;color:var(--muted);padding-left:18px;list-style:decimal">
+        <li style="margin-bottom:7px"><b style="color:var(--gold-l)">run.bat</b> (Windows) ya <b style="color:var(--gold-l)">./run.sh</b> (Mac/Linux) par double-click. Sab install + launch ho jayega.</li>
+        <li style="margin-bottom:7px">Browser khulta hai: <b>Dashboard</b> + <b>Website</b>.</li>
+        <li style="margin-bottom:7px"><b>Browser &amp; QR Login</b> tab kholein → har platform ka "Start Browser" dabayein → QR scan karein.</li>
+        <li style="margin-bottom:7px"><b>5 Agents</b> tab mein har agent ka Auto-Send toggle aur Start/Stop button hai.</li>
+        <li style="margin-bottom:7px"><b>Content Factory</b> → caption + banner → <b>Video Maker</b> → MP4 download kar ke post kar dein.</li>
+      </ol>
+      <div class="bad-note" style="margin-top:12px">⚠️ Agar Playwright install na hua ho, browser agents kaam nahi karenge — <code>run.bat</code> dobara chala dein, ye khud <code>playwright install chromium</code> karta hai. Content, Leads, AI aur Videos phir bhi chalti rahengi.</div>
+    </div>
+    <div class="card">
+      <h3><span class="ico">📱</span> Business Details (har jagah embedded)</h3>
+      <table style="min-width:auto">
+        <tr><th>Shop</th><td>Chaudhary Type House &amp; Property Advisors</td></tr>
+        <tr><th>Owner</th><td>Chaudhary Muhammad Sanaullah</td></tr>
+        <tr><th>Address</th><td>Near Baldia Chowk, City Chishtian</td></tr>
+        <tr><th>Timing</th><td>Subah 8:00 AM se Shaam 8:00 PM tak</td></tr>
+        <tr><th>WhatsApp</th><td><a href="https://wa.me/923277450361">0327-7450361</a></td></tr>
+        <tr><th>Calculator</th><td><a href="https://chtype.online" target="_blank" rel="noopener">chtype.online</a></td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3><span class="ico">🔧</span> System Info</h3>
+      <div id="sysinfo" style="font-size:.84rem;color:var(--muted)"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ==========================================================================
+   ADMIN DASHBOARD — talks to the local app.py on 127.0.0.1:8000
+   ========================================================================== */
+const API = location.origin;
+const $ = s=>document.querySelector(s), $$ = s=>[...document.querySelectorAll(s)];
+let SYSTEM={}, QUEUE_FILTER="", LOG_FILTER="", agents=[];
+
+/* ---------- utils ---------- */
+async function api(path, opts={}){
+  const r = await fetch(API+path, {headers:{"Content-Type":"application/json"}, ...opts});
+  if(!r.ok){ throw new Error((await r.text()).slice(0,200)); }
+  return r.json();
+}
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg, err){
+  const t=$("#toast"); t.textContent=msg; t.className="toast show"+(err?" err":"");
+  clearTimeout(t._h); t._h=setTimeout(()=>t.className="toast",3200);
+}
+const fmt = s => (s||"").replace("T"," ").slice(0,19);
+
+/* ---------- tabs ---------- */
+$$("nav.tabs button").forEach(b=>b.onclick=()=>{
+  $$("nav.tabs button").forEach(x=>x.classList.remove("on")); b.classList.add("on");
+  $$(".view").forEach(v=>v.classList.remove("on")); $("#"+b.dataset.v).classList.add("on");
+  if(b.dataset.v==="v-leads") loadLeads();
+  if(b.dataset.v==="v-browser") loadBrowsers();
+  if(b.dataset.v==="v-content") loadQueue();
+  if(b.dataset.v==="v-video"){ loadJobs(); loadMedia(); }
+  if(b.dataset.v==="v-logs") loadLogs();
+});
+
+/* ---------- header buttons ---------- */
+$("#btnAll").onclick = async()=>{ await api("/api/agents/all/start",{method:"POST"}); toast("✅ Sab agents start ho gaye"); loadAgents(); };
+$("#btnRefresh").onclick = ()=>{ loadAll(); toast("🔄 Refresh ho gaya"); };
+$("#btnKill").onclick = async()=>{
+  const paused = !$("#killbar").classList.contains("paused") ;
+  if(!paused && !confirm("🛑 EMERGENCY KILL SWITCH\n\nKya aap SARI auto-replies foran band karna chahte hain?")) return;
+  await api("/api/kill-switch",{method:"POST",body:JSON.stringify({paused})});
+  toast(paused?"🛑 Sab auto-replies band":"✅ Agents dobara live");
+  loadSystem(); loadAgents();
+};
+$("#masterSend").onchange = async e=>{
+  await api("/api/agents/all/auto-send",{method:"POST",body:JSON.stringify({value:e.target.checked})});
+  toast(e.target.checked?"✅ Master auto-send ON":"⏸️ Master auto-send OFF"); loadAgents();
+};
+
+/* ---------- SYSTEM ---------- */
+async function loadSystem(){
+  try{
+    SYSTEM = await api("/api/system");
+  }catch(e){ return; }
+  const e=SYSTEM.engines, g=SYSTEM.globals, s=SYSTEM.shop;
+  $("#killbar").className = "killbar"+(g.globally_paused?"":" ok");
+  $("#killText").textContent = g.globally_paused
+    ? "🛑 AGENTS PAUSED — koi message nahi jayega"
+    : "✅ SYSTEM LIVE — Agents chal rahe hain";
+  $("#masterSend").checked = g.auto_send_default && !g.globally_paused;
+
+  const f = e.fonts||{};
+  const items = [
+    ["AI Engine", e.ai_provider, true],
+    ["Pillow (images)", e.pillow?"OK":"MISSING → pip install Pillow", e.pillow],
+    ["FFmpeg (video)", e.ffmpeg?"OK":"MISSING → pip install imageio-ffmpeg", e.ffmpeg],
+    ["edge-tts (voice)", e.edge_tts?"OK":"MISSING → pip install edge-tts", e.edge_tts],
+    ["Urdu shaping", f.raqm?"Pillow+Raqm":(f.shaping_libs?"Pure-Python shaping (free)":"MISSING"), f.raqm||f.shaping_libs],
+    ["Urdu font", f.font?f.font:"NONE — Roman fallback", f.font_ok],
+    ["Playwright", e.playwright?(e.playwright_chromium?"OK + Chromium":"pip install chromium"):"MISSING", e.playwright&&e.playwright_chromium],
+    ["Gemini (optional)", e.gemini_enabled?"ON (free tier)":"OFF — rule engine chal raha hai", e.gemini_enabled],
+    ["Python / OS", g.python+" / "+g.os, true],
+  ];
+  $("#engines").innerHTML = items.map(([k,v,ok])=>
+    `<div><span class="${ok?"ok":"no"}">${ok?"✔":"✖"}</span> <b>${k}:</b> ${esc(v)}</div>`).join("")
+    + (f.urdu_renderable ? "" : `<div><span class="no">✖</span> <b>Urdu note:</b> ${esc(f.note||"")}</div>`)
+    + (f.noto_installed ? "" : `<div style="flex-basis:100%"><button class="btn b-gold b-sm" id="btnFont">⬇️ Install FREE Noto Nastaliq Urdu font (~300KB, one time)</button></div>`);
+  const bf = $("#btnFont");
+  if(bf) bf.onclick = async()=>{
+    toast("⬇️ Font download ho raha hai…");
+    try{ const r = await api("/api/fonts/install",{method:"POST"}); toast(r.ok?"✅ Nastaliq font install ho gaya":"⚠️ Download nahi hua — Roman Urdu istemal hoga"); loadSystem(); }
+    catch(e){ toast("❌ "+e.message,true); }
+  };
+
+  $("#sysinfo").innerHTML = `
+    <div><b>Server:</b> http://${g.host}:${g.port}</div>
+    <div><b>Data folder:</b> data/ (SQLite, media, browser profiles)</div>
+    <div><b>Leads:</b> ${SYSTEM.db.total} total, ${SYSTEM.db.today} aaj</div>
+    <div><b>Auto-send default:</b> ${g.auto_send_default?"ON":"OFF"}</div>
+    <div><b>Kill switch file:</b> data/AGENTS_PAUSED</div>
+    <div><b>CSV export:</b> <a href="/api/leads.csv">/api/leads.csv</a></div>
+    <div style="margin-top:8px"><b>API docs:</b> <a href="/api/docs">/api/docs</a></div>`;
+
+  // topic dropdowns
+  if(!$("#gTopic").options.length){
+    api("/api/topics").then(d=>{
+      const opts = '<option value="">Random (auto)</option>' + d.topics.map(t=>`<option value="${t.key}">${esc(t.title)}</option>`).join("");
+      $("#gTopic").innerHTML = opts; $("#vTopic").innerHTML = opts;
+    });
+  }
+}
+
+/* ---------- AGENTS ---------- */
+function agentCard(a){
+  const cls = a.status==="running"?"running":a.status==="error"?"error":a.status==="paused"?"paused":"";
+  const pill = a.status==="running"?'<span class="pill p-run">● RUNNING</span>'
+    : a.status==="error"?'<span class="pill p-err">● ERROR</span>'
+    : a.status==="paused"?'<span class="pill p-pause">● PAUSED</span>'
+    : '<span class="pill p-stop">■ STOPPED</span>';
+  const d = a.detail||{};
+  const lines = Object.entries(d).slice(0,6).map(([k,v])=>`<div>▸ <b>${k}:</b> ${esc(typeof v==="object"?JSON.stringify(v):v)}</div>`).join("");
+  return `<div class="agent ${cls}">
+    <div class="ah">
+      <div class="ai">${a.icon}</div>
+      <div style="flex:1;min-width:0">
+        <b>${esc(a.name)}</b>
+        <p>${esc(a.description)}</p>
+      </div>
+      ${pill}
+    </div>
+    <div class="adetail">
+      ${lines || '<div>▸ Abhi koi activity nahi — Start dabayein.</div>'}
+      ${a.last_error?`<div style="color:#ff9b9e">⚠ ${esc(a.last_error)}</div>`:''}
+      <div>▸ Replies: <b>${a.replies_sent}</b> • Posts: <b>${a.posts_published}</b> • Runs: <b>${a.runs}</b> • Har ${a.interval}s • ${a.globally_paused?'<span style="color:#ffc96b">KILL SWITCH ON</span>':''}</div>
+    </div>
+    <div class="abtns">
+      <button class="btn b-em b-sm" onclick="agentAction(${a.id},'start')">▶️ Start</button>
+      <button class="btn b-ghost b-sm" onclick="agentAction(${a.id},'stop')">⏹ Stop</button>
+      <button class="btn b-ghost b-sm" onclick="agentAction(${a.id},'run-once')">⚡ Run Once</button>
+      <label class="switch" title="Auto-send"><input type="checkbox" ${a.auto_send?'checked':''} onchange="agentAuto(${a.id},this.checked)"><span class="slider"></span></label>
+      <span style="font-size:.72rem;color:var(--muted);align-self:center">Auto-send</span>
+    </div>
+  </div>`;
+}
+async function loadAgents(){
+  try{
+    const d = await api("/api/agents"); agents = d.agents;
+    $("#agentGrid").innerHTML = agents.map(agentCard).join("");
+    $("#agentMini").innerHTML = agents.map(a=>
+      `<div style="display:flex;gap:10px;align-items:center;background:#062b23;border:1px solid var(--line);border-radius:10px;padding:9px 12px">
+        <span>${a.icon}</span>
+        <div style="flex:1;min-width:0"><b style="font-size:.84rem">${esc(a.name.split("—")[0])}</b>
+          <div style="font-size:.74rem;color:var(--muted)">${a.replies_sent} replies • ${a.posts_published} posts • ${a.status}</div></div>
+        <span class="pill ${a.status==="running"?"p-run":a.status==="error"?"p-err":"p-stop"}">${a.status}</span>
+      </div>`).join("");
+    $("#sReplies").textContent = agents.reduce((s,a)=>s+(+a.replies_sent||0),0);
+  }catch(e){}
+}
+window.agentAction = async(id,act)=>{
+  try{ await api(`/api/agents/${id}/${act}`,{method:"POST"}); toast("✅ "+act+" → Agent "+id); loadAgents(); }
+  catch(e){ toast("❌ "+e.message,true); }
+};
+window.agentAuto = async(id,v)=>{ await api(`/api/agents/${id}/auto-send`,{method:"POST",body:JSON.stringify({value:v})}); loadAgents(); };
+
+/* ---------- DASHBOARD ---------- */
+async function loadDash(){
+  try{
+    const d = await api("/api/leads?limit=200");
+    $("#sTotal").textContent = d.stats.total; $("#sToday").textContent = d.stats.today;
+    $("#sHot").textContent = d.leads.filter(l=>(l.notes||"").includes("HOT")).length;
+    const src = d.stats.by_source||{};
+    const tot = Object.values(src).reduce((a,b)=>a+b,0)||1;
+    $("#srcChart").innerHTML = Object.entries(src).map(([k,v])=>
+      `<div><div style="display:flex;justify-content:space-between;font-size:.8rem"><span>${esc(k)}</span><b style="color:var(--gold-l)">${v}</b></div>
+      <div class="bar"><i style="width:${(v/tot*100).toFixed(1)}%"></i></div></div>`).join("")
+      || '<div style="color:var(--muted);font-size:.82rem">Abhi koi lead nahi. Website form ya WhatsApp se inquiries yahan aayengi.</div>';
+    const hot = d.leads.filter(l=>(l.notes||"").includes("HOT")).slice(0,5);
+    $("#nextSteps").innerHTML = hot.map(l=>`<div style="margin:4px 0">☎️ <b>${esc(l.name||"(naam nahi mila)")}</b> — ${esc(l.service||"general")} — ${esc(l.created_at)} — <a href="https://wa.me/923277450361?text=${encodeURIComponent("Assalam-o-Alaikum "+l.name+", "+l.service)}">WhatsApp karein</a></div>`).join("")
+      || '<div>Abhi koi HOT lead nahi.</div>';
+  }catch(e){}
+}
+
+/* ---------- LEADS ---------- */
+let LEADROWS=[];
+async function loadLeads(){
+  try{
+    const d = await api("/api/leads?limit=300");
+    LEADROWS = d.leads; renderLeads();
+    $("#leadFilter").onchange = renderLeads;
+    $("#leadSearch").oninput = renderLeads;
+    const a = await api("/api/appointments");
+    $("#apptBody").innerHTML = a.appointments.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.phone)}</td><td>${esc(x.service)}</td><td>${esc(x.visit_date)}</td><td>${esc(x.visit_time)}</td></tr>`).join("")
+      || `<tr><td colspan="5" style="color:var(--muted)">Koi appointment nahi.</td></tr>`;
+    const c = await api("/api/conversations");
+    $("#convBody").innerHTML = c.conversations.map(x=>`<tr><td>${esc(x.channel)}</td><td>${esc(x.contact)}</td><td style="max-width:230px">${esc((x.last_text||"").slice(0,110))}</td><td style="max-width:230px">${esc((x.last_reply||"").slice(0,110))}</td><td>${esc(fmt(x.updated_at))}</td></tr>`).join("")
+      || `<tr><td colspan="5" style="color:var(--muted)">Koi conversation nahi.</td></tr>`;
+  }catch(e){ toast("Server se connect nahi hua: "+e.message,true); }
+}
+function renderLeads(){
+  const f=$("#leadFilter").value, q=($("#leadSearch").value||"").toLowerCase();
+  const rows = LEADROWS.filter(l=>
+    (!f || l.status===f) &&
+    (!q || [l.name,l.phone,l.service,l.message,l.source].join(" ").toLowerCase().includes(q)));
+  $("#leadBody").innerHTML = rows.map(l=>{
+    const tag=(l.notes||"").includes("HOT")?"t-hot":(l.notes||"").includes("WARM")?"t-warm":"t-cold";
+    const sc=(l.notes||"").match(/(\d+)\/100/); 
+    return `<tr>
+      <td><span class="tag ${tag}">${sc?sc[1]:"-"}</span></td>
+      <td><b>${esc(l.name||"—")}</b></td>
+      <td>${l.phone?`<a href="tel:${esc(l.phone)}">${esc(l.phone)}</a>`:"—"}</td>
+      <td>${esc(l.service||"—")}</td>
+      <td style="max-width:280px;color:#b9d8ce">${esc((l.message||"—").slice(0,150))}</td>
+      <td>${esc(l.source)}</td>
+      <td><span class="tag t-${esc(l.status)}">${esc(l.status)}</span></td>
+      <td>${esc(l.visit_time||"—")}</td>
+      <td style="color:var(--muted);font-size:.76rem">${esc(fmt(l.created_at))}</td>
+      <td style="white-space:nowrap">
+        <button class="btn b-ghost b-sm" onclick="leadStatus('${l.id}','booked')">📅 Book</button>
+        <button class="btn b-ghost b-sm" onclick="leadStatus('${l.id}','done')">✔</button>
+        <button class="btn b-ghost b-sm" onclick="leadDel('${l.id}')">🗑</button>
+      </td></tr>`;}).join("") || `<tr><td colspan="10" style="color:var(--muted);text-align:center;padding:24px">Koi lead nahi abhi.</td></tr>`;
+}
+window.leadStatus = async(id,s)=>{ await api("/api/leads/"+id,{method:"PATCH",body:JSON.stringify({status:s})}); loadLeads(); loadDash(); };
+window.leadDel = async(id)=>{ if(!confirm("Lead delete karein?")) return; await api("/api/leads/"+id,{method:"DELETE"}); loadLeads(); loadDash(); };
+$("#btnCsv").onclick = ()=>window.open("/api/leads.csv","_blank");
+$("#btnLeadReload").onclick = loadLeads;
+
+/* ---------- BROWSERS ---------- */
+async function loadBrowsers(){
+  try{
+    const d = await api("/api/browsers");
+    $("#playNote").style.display = (!d.chromium) ? "block" : "none";
+    if(!d.chromium) $("#playNote").innerHTML = "⚠️ <b>Playwright Chromium install nahi hai.</b> run.bat dobara chala dein (ye khud install karta hai). Browser agents tab tak chal nahi sakte.";
+    $("#browserGrid").innerHTML = d.sessions.map(s=>`
+      <div class="bsess">
+        <div class="bhead">
+          <span class="bdot ${s.state!=="stopped"&&s.state!=="error"?"on":(s.state==="error"?"err":"")}"></span>
+          <b>${esc(s.label)}</b>
+          <span class="pill ${s.logged_in?"p-run":"p-stop"}">${s.logged_in?"LOGGED IN":(s.state==="error"?"ERROR":(s.state==="stopped"?"STOPPED":"QR / LOGIN NEEDED"))}</span>
+          <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn b-em b-sm" onclick="br('${s.name}','start')">▶️ Start</button>
+            <button class="btn b-ghost b-sm" onclick="br('${s.name}','restart')">🔄 Restart</button>
+            <button class="btn b-ghost b-sm" onclick="br('${s.name}','stop')">⏹ Stop</button>
+            <button class="btn b-gold b-sm" onclick="qr('${s.name}')">📷 Live View / QR</button>
+          </div>
+        </div>
+        <div style="font-size:.78rem;color:var(--muted)">
+          <div>URL: <a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.url||"—")}</a></div>
+          <div>Profile: <span class="mono">${esc(s.profile_dir)}</span></div>
+          ${s.error?`<div style="color:#ff9b9e">⚠ ${esc(s.error)}</div>`:''}
+        </div>
+        <div class="qr" id="qr-${s.name}">
+          <div style="font-size:.8rem;color:var(--muted)">Browser start karne ke baad "Live View / QR" dabayein — QR yahin dikh jayega.</div>
+        </div>
+      </div>`).join("");
+  }catch(e){}
+}
+window.br = async(n,act)=>{ toast("⏳ "+n+" "+act+"…"); try{ await api(`/api/browsers/${n}/${act}`,{method:"POST"}); setTimeout(loadBrowsers,1500);}catch(e){toast("❌ "+e.message,true);} };
+window.qr = async(n)=>{
+  const box=$("#qr-"+n); box.innerHTML='<div class="spinners"></div> <span style="font-size:.8rem">Screenshot aa raha hai…</span>';
+  try{
+    const img=await fetch("/api/browsers/"+n+"/screenshot",{cache:"no-store"});
+    if(!img.ok) throw new Error("Browser band hai — pehle Start dabayein.");
+    const blob=await img.blob();
+    box.innerHTML=`<img src="${URL.createObjectURL(blob)}" alt="live"><div class="hint">↑ Ye live browser window hai. QR scan karein, phir ye panel band kar dein.<br><b>Login ke baad</b> upar status <span class="pill p-run">LOGGED IN</span> ho jayega.</div>`;
+  }catch(e){ box.innerHTML=`<div class="hint" style="color:#ff9b9e">${esc(e.message)}</div>`; }
+};
+
+/* ---------- CONTENT ---------- */
+async function genContent(platform){
+  const b=$("#gBanner").value==="1";
+  toast("⏳ Generate ho raha hai…");
+  try{
+    const d = await api("/api/content/generate",{method:"POST",body:JSON.stringify({
+      platform, topic:$("#gTopic").value||null, language:$("#gLang").value, with_banner:b})});
+    const c=d.content;
+    $("#genPreview").innerHTML = `<h4>${esc(c.title)}</h4>${esc(c.caption)}\n\n<b>#Hashtags</b>\n${esc(c.hashtags||"—")}`;
+    $("#genMedia").innerHTML = c.media_path
+      ? `<a href="${c.media_path.replace(/\\/g,"/")}" target="_blank"><img src="${c.media_path.replace(/\\/g,"/")}" style="width:100%;max-width:340px;border-radius:12px;border:1px solid var(--line)"></a>`
+      : `<div style="font-size:.8rem;color:var(--muted)">Banner nahi bana (Pillow missing ya text-only mode).</div>`;
+    toast("✅ Content ready!"); loadQueue();
+  }catch(e){ toast("❌ "+e.message,true); }
+}
+$("#btnGen").onclick = ()=>genContent($("#gPlatform").value);
+$("#btnGen3").onclick = async()=>{ for(let i=0;i<3;i++) await genContent("instagram"); };
+$("#queueTabs").onclick=e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  $$("#queueTabs button").forEach(x=>x.classList.remove("on")); b.classList.add("on");
+  QUEUE_FILTER=b.dataset.p; loadQueue();
+};
+async function loadQueue(){
+  try{
+    const d = await api("/api/content?limit=80"+(QUEUE_FILTER?"&platform="+QUEUE_FILTER:""));
+    $("#queueBody").innerHTML = d.content.map(c=>`
+      <tr><td>${esc(c.platform)}</td>
+        <td style="max-width:250px">${esc(c.topic)}</td>
+        <td>${c.media_path?`<a href="${c.media_path.replace(/\\/g,"/")}" target="_blank">🖼️ dekh lein</a>`:"—"}</td>
+        <td><span class="tag t-${esc(c.status)}">${esc(c.status)}</span></td>
+        <td><button class="btn b-ghost b-sm" onclick='viewContent(${JSON.stringify(c.id)})'>👁️</button></td></tr>`).join("")
+      || `<tr><td colspan="5" style="color:var(--muted)">Queue khali hai.</td></tr>`;
+  }catch(e){}
+}
+window.viewContent = async(id)=>{
+  const d = await api("/api/content?limit=100");
+  const c = d.content.find(x=>x.id===id); if(!c) return;
+  $("#genPreview").innerHTML = `<h4>${esc(c.topic)} (${esc(c.platform)})</h4>${esc(c.caption)}\n\n${esc(c.hashtags||"")}`;
+  if(c.media_path) $("#genMedia").innerHTML = `<a href="${c.media_path.replace(/\\/g,"/")}" target="_blank"><img src="${c.media_path.replace(/\\/g,"/")}" style="width:100%;max-width:340px;border-radius:12px;border:1px solid var(--line)"></a>`;
+};
+
+/* ---------- VIDEO ---------- */
+$("#btnVideo").onclick = async()=>{
+  toast("⏳ Video ban rahi hai… (pehli baar ~1-2 minute lagte hain)");
+  try{
+    const d = await api("/api/video/render",{method:"POST",body:JSON.stringify({
+      topic:$("#vTopic").value||null, language:$("#vLang").value, voice:$("#vVoice").value||null})});
+    const s=d.script;
+    $("#scriptBox").innerHTML = `<h4>🎬 ${esc(s.title)}</h4><b>HOOK (0-3s):</b> ${esc(s.hook)}\n\n` +
+      (s.timeline||[]).map(t=>`<b>${esc(t.t)} · ${esc(t.beat)}</b>: ${esc(t.line)}`).join("\n") +
+      `\n\n<b>SPOKEN SCRIPT:</b>\n${esc(s.spoken)}\n\n<b>CAPTION:</b>\n${esc(s.caption)}\n\n<b>${esc(s.hashtags)}</b>`;
+    toast("✅ Render shuru — progress neeche dekhein.");
+    loadJobs(); setTimeout(loadJobs,4000); setTimeout(loadJobs,12000); setTimeout(loadJobs,25000);
+  }catch(e){ toast("❌ "+e.message,true); }
+};
+async function loadJobs(){
+  try{
+    const d = await api("/api/jobs?limit=15");
+    $("#jobsBox").innerHTML = d.jobs.map(j=>`
+      <div class="job">
+        <div style="display:flex;justify-content:space-between;font-size:.82rem"><b>${esc(j.title)}</b>
+          <span class="tag ${j.status==="done"?"t-done":(j.status==="failed"?"t-draft":"t-new")}">${esc(j.status)}</span></div>
+        <div class="bar"><i style="width:${j.progress}%"></i></div>
+        <div style="font-size:.78rem;color:var(--muted)">${esc(j.message||"")} — ${j.progress}%</div>
+        ${j.result?`<div style="margin-top:6px"><a class="btn b-gold b-sm" href="${esc(j.result.replace(/\\/g,"/"))}" download>⬇️ MP4 Download</a></div>`:''}
+      </div>`).join("") || '<div style="color:var(--muted);font-size:.83rem">Abhi koi render job nahi.</div>';
+  }catch(e){}
+}
+async function loadMedia(){
+  try{
+    const d = await api("/api/media");
+    $("#mediaGrid").innerHTML = d.media.map(m=>
+      `<a href="${m.url}" target="_blank">${m.kind==="videos"?`<video src="${m.url}"></video>`:`<img src="${m.url}" loading="lazy">`}<span>${esc(m.name)}</span></a>`).join("")
+      || '<div style="color:var(--muted);font-size:.82rem">Abhi koi media nahi — Content Factory ya Video Maker chala dein.</div>';
+  }catch(e){}
+}
+
+/* ---------- LOGS ---------- */
+async function loadLogs(){
+  try{
+    const d = await api("/api/logs?limit=200");
+    const srcs=[...new Set(d.logs.map(l=>l.source))];
+    if($("#logFilter").options.length<=1) $("#logFilter").innerHTML='<option value="">All</option>'+srcs.map(s=>`<option>${esc(s)}</option>`).join("");
+    const rows=d.logs.filter(l=>!LOG_FILTER||l.source===LOG_FILTER);
+    const html=rows.map(l=>`<div class="logline ${esc(l.level)}"><span class="t">${esc(fmt(l.ts).slice(11))}</span><span class="s">${esc(l.source)}</span><span class="m">${esc(l.message)}</span></div>`).join("");
+    $("#logBox").innerHTML=html; $("#logMini").innerHTML=html;
+    if(!LOG_FILTER) $("#logBox").scrollTop=0;
+  }catch(e){}
+}
+$("#logFilter").onchange=e=>{LOG_FILTER=e.target.value;loadLogs();};
+$("#btnLogReload").onclick = loadLogs;
+
+/* ---------- BOOT ---------- */
+function loadAll(){ loadSystem(); loadAgents(); loadDash(); loadLogs(); }
+loadAll(); loadQueue(); loadJobs(); loadMedia();
+setInterval(()=>{ loadSystem(); loadAgents(); }, 5000);
+setInterval(()=>{ if($("#v-logs").classList.contains("on")) loadLogs(); }, 7000);
+setInterval(()=>{ loadDash(); }, 10000);
+setInterval(()=>{ if($("#v-video").classList.contains("on")){loadJobs();loadMedia();} }, 9000);
+</script>
+</body>
+</html>

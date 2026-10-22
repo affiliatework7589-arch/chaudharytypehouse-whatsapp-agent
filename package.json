@@ -1,0 +1,20 @@
+{
+  "name": "chaudhary-type-house",
+  "version": "1.0.0",
+  "description": "> **Owner:** Chaudhary Muhammad Sanaullah\r > **Address:** Near Baldia Chowk, City Chishtian\r > **Timing:** Subah 8:00 AM se Shaam 8:00 PM tak\r > **Phone & WhatsApp:** 0327-7450361 \u2014 https://wa.me/923277450361\r > **FREE Registry Kharcha Calculator:** https://chtype.online",
+  "main": "whatsapp_bridge.js",
+  "scripts": {
+    "start": "node whatsapp_bridge.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
