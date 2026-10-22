@@ -1,0 +1,3 @@
+# Minimal Python deps for the WhatsApp bridge only (no FastAPI / Playwright / Pillow).
+# 100% free, no API keys, no paid services.
+requests>=2.31

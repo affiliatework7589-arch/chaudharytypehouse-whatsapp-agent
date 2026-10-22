@@ -1,14 +1,18 @@
 services:
   - type: worker
     name: chaudhary-whatsapp-bridge
-    env: node
-    buildCommand: npm install
-    startCommand: npm start
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
     envVars:
       - key: PYTHON
         value: python3
+      - key: WA_AUTH_DIR
+        value: /app/auth_info_baileys
+      - key: PYTHONIOENCODING
+        value: utf-8
     disk:
       name: wa-session
-      mountPath: /opt/render/project/src/auth_info_baileys
+      mountPath: /app/auth_info_baileys
       sizeGB: 1
-"

@@ -16,7 +16,8 @@ const qrcode = require("qrcode-terminal");
 const { spawn } = require("child_process");
 const path = require("path");
 
-const AUTH_DIR = path.join(__dirname, "auth_info_baileys");
+// Session folder — override with WA_AUTH_DIR for cloud persistent disks.
+const AUTH_DIR = process.env.WA_AUTH_DIR || path.join(__dirname, "auth_info_baileys");
 const PYTHON = process.env.PYTHON || "python";
 const AI_SCRIPT = path.join(__dirname, "whatsapp_ai.py");
 
