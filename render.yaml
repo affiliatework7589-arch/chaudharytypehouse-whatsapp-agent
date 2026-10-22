@@ -1,10 +1,12 @@
 services:
-  - type: worker
+  - type: web
     name: chaudhary-whatsapp-bridge
     runtime: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    plan: starter
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /health
     envVars:
       - key: PYTHON
         value: python3
@@ -12,7 +14,12 @@ services:
         value: /app/auth_info_baileys
       - key: PYTHONIOENCODING
         value: utf-8
-    disk:
-      name: wa-session
-      mountPath: /app/auth_info_baileys
-      sizeGB: 1
+      - key: LOG_LEVEL
+        value: info
+      - key: TYPING_MIN_MS
+        value: "5000"
+      - key: TYPING_MAX_MS
+        value: "10000"
+      # NOTE: a persistent disk can be attached later from the Render dashboard
+      # (Disks tab -> Mount Path: /app/auth_info_baileys). Disks require a paid plan.
+      # On the free tier the session survives instance sleep, but NOT a new deploy.

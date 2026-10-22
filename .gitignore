@@ -3,6 +3,9 @@ node_modules/
 .venv/
 venv/
 
+# WhatsApp session (created at runtime; NEVER commit - it is a credential)
+auth_info_baileys/
+
 # Python caches
 __pycache__/
 *.pyc
@@ -13,14 +16,18 @@ data/
 
 # Temp files
 *.out
+*.err
 _purity.out
 _selftest.out
+_bridge.out
+_bridge.err
+_testauth/
 _fix_*.py
 _chk*.py
 _insert_*.py
 _patch*.py
+_api_scan*.js
 
 # OS
 .DS_Store
 Thumbs.db
-"
