@@ -3,9 +3,6 @@ node_modules/
 .venv/
 venv/
 
-# WhatsApp session (created at runtime; do NOT commit secrets)
-auth_info_baileys/
-
 # Python caches
 __pycache__/
 *.pyc
